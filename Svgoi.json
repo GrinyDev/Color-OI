@@ -1,16 +1,7 @@
 {
-  "versionName": "1.0.0",
-  "versionCode": "100",
+  "versionName": "1.0.3",
+  "versionCode": "102",
   "downloadUrl": "https://msdpy.lanzouv.com/iW7Hm3f9n9qb",
   "updateLog": "优化了已知bug，增加交互体验！",
-  "notice": {
-    "enabled": true,
-    "title": "新年快乐 🎇",
-    "content": "\n🎉 2026，新岁启程，愿你乘风破浪、财运亨通！\n\n✨ 应用官网已上线测试，欢迎前往探索体验。",
-    "goToButton": {
-      "enabled": true,
-      "text": "前往",
-      "url": "https://grinydev.github.io/Color-OI-G/"
-    }
-  }
+  "needUpdate": true
 }
