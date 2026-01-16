@@ -2,5 +2,9 @@
   "versionName": "1.0.2",
   "versionCode": "102",
   "downloadUrl": "https://msdpy.lanzouv.com/iW7Hm3f9n9qb",
-  "updateLog": "优化了已知bug，增加交互体验！"
+  "updateLog": "优化了已知bug，增加交互体验！",
+  "notify": true,
+  "customNotification": "这是一条自定义通知内容",
+  "showWebButton": true,
+  "webUrl": "https://example.com"
 }
