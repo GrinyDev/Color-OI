@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SVG Pro Editor V1版本</title>
+<style>
+/* ===== CSS 变量定义 ===== */
+:root {
+  --bg-color: #f2f2f7;
+  --surface-color: #ffffff;
+  --primary-color: #007aff;
+  --accent-color: #ff9500;
+  --success-color: #34c759;
+  --danger-color: #ff3b30;
+  --text-color: #1c1c1e;
+  --border-color: #e5e5ea;
+  --shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  --code-bg: #f8f8f8;
+}
+
+/* ===== 全局样式 ===== */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== 头部样式 ===== */
+/* --- 头部 --- */
+header {
+  background: var(--surface-color);
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-bottom: 0.5px solid var(--border-color);
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+h1 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  color: #333;
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+  background: #f2f2f7;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.action-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  transition: background 0.2s;
+}
+
+.action-btn:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.action-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.action-btn.danger {
+  color: var(--danger-color);
+}
+
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.mode-switch {
+  background: #e9e9eb;
+  border-radius: 8px;
+  padding: 2px;
+  display: flex;
+}
+
+.mode-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  color: #636366;
+  font-weight: 500;
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== 工作区样式 ===== */
+/* --- 工作区 --- */
+#workspace {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+
+/* 可视化视图 */
+#visual-view {
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  background-image: radial-gradient(#d1d1d6 1px, transparent 1px);
+  background-size: 20px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+svg#canvas {
+  flex: 1;
+  width: 100%;
+  touch-action: none;
+}
+
+/* 代码视图结构 */
+#code-view {
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  background: var(--surface-color);
+}
+
+/* 代码镜像容器 */
+#cm-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  font-size: 13px;
+}
+
+/* 覆盖代码镜像高度 */
+.cm-editor {
+  height: 100%;
+}
+
+.cm-scroller {
+  overflow: auto;
+}
+
+.cm-gutters {
+  background-color: #f0f0f5;
+  border-right: 1px solid #ddd;
+  color: #999;
+}
+
+.cm-content {
+  padding-bottom: 40px;
+}
+
+/* 滚动空间 */
+
+/* 代码快速工具栏 */
+#code-toolbar {
+  height: 48px;
+  background: #ececec;
+  border-top: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  padding: 0 10px;
+  gap: 8px;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+#code-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.code-key {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-family: monospace;
+  font-size: 14px;
+  color: #333;
+  box-shadow: 0 1px 0px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.code-key:active {
+  background: #e5e5e5;
+  transform: translateY(1px);
+}
+
+.code-key.attr {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* ===== 可视化界面样式 ===== */
+/* --- 可视化界面样式 --- */
+.ui-selection-box {
+  fill: none;
+  stroke: var(--primary-color);
+  stroke-width: 1;
+  stroke-dasharray: 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.ui-handle,
+.ui-radius-handle,
+.ui-rotate-handle {
+  stroke: #fff;
+  stroke-width: 2px;
+  pointer-events: none;
+}
+
+.ui-handle {
+  fill: var(--primary-color);
+}
+
+.ui-radius-handle {
+  fill: var(--accent-color);
+}
+
+.ui-rotate-handle {
+  fill: #fff;
+  stroke: var(--text-color);
+  stroke-width: 1.5px;
+}
+
+.ui-rotate-connector {
+  stroke: var(--primary-color);
+  stroke-width: 1;
+  stroke-dasharray: 2;
+  pointer-events: none;
+}
+
+.ui-hit {
+  fill: rgba(0, 0, 0, 0);
+  stroke: none;
+  cursor: pointer;
+  pointer-events: fill;
+}
+
+.ui-text-drag-area {
+  fill: rgba(0, 0, 0, 0);
+  cursor: move;
+  pointer-events: fill;
+}
+
+/* 辅助线 */
+.ui-guide-line {
+  stroke: var(--success-color);
+  stroke-width: 0.5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s;
+  vector-effect: non-scaling-stroke;
+}
+
+.ui-guide-line.visible {
+  opacity: 1;
+}
+
+/* ===== 主工具栏样式 ===== */
+/* --- 主工具栏（可视化模式） --- */
+#toolbar {
+  height: 60px;
+  background: var(--surface-color);
+  border-top: 0.5px solid var(--border-color);
+  position: relative;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 50;
+}
+
+.toolbar-container {
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  overflow-x: auto;
+  padding: 0 10px;
+  gap: 12px;
+}
+
+.toolbar-container::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-container.active {
+  display: flex;
+  animation: fadeIn 0.2s;
+}
+
+#tools-edit {
+  justify-content: flex-start;
+}
+
+.tool-divider {
+  width: 1px;
+  height: 30px;
+  background: #e5e5ea;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.tool-btn {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 9px;
+  gap: 3px;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.tool-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.edit-btn {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.cancel-btn {
+  color: #8e8e93;
+}
+
+/* ===== 属性面板样式 ===== */
+/* 属性表 */
+#prop-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: var(--shadow);
+  transform: translateY(110%);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 60;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#prop-sheet.open {
+  transform: translateY(0);
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sheet-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-btn {
+  background: #f2f2f7;
+  color: var(--primary-color);
+  border: none;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.control-group {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-group.active {
+  display: flex;
+}
+
+.compact-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 30px;
+  align-items: center;
+  gap: 10px;
+}
+
+.row-label {
+  font-size: 12px;
+  color: #8e8e93;
+}
+
+.row-val {
+  font-size: 12px;
+  text-align: right;
+  color: #000;
+  font-weight: 500;
+}
+
+.text-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e5e5ea;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  outline: none;
+}
+
+input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  border: 0.5px solid #ddd;
+  margin-top: -8px;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 2px;
+  background: #e5e5ea;
+  border-radius: 2px;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f9f9f9;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.color-group {
+  display: flex;
+  align-items: center;
+}
+
+.color-label {
+  font-size: 12px;
+  color: #8e8e93;
+  margin-right: 8px;
+}
+
+.color-circle-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  position: relative;
+  overflow: hidden;
+  margin-left: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.color-dot {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+input[type="color"] {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  opacity: 0;
+}
+
+.action-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.full-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.btn-delete {
+  background: #fff0f0;
+  color: var(--danger-color);
+}
+
+.btn-duplicate {
+  background: #f2f2f7;
+  color: var(--primary-color);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ===== 页面头部 ===== -->
+<header>
+  <div class="header-left">
+    <h1>SVG Pro</h1>
+    <div class="header-actions">
+      <button class="action-btn" id="btn-undo" onclick="undo()" disabled title="撤销"><svg viewBox="0 0 24 24">
+          <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.17 8 12.5 8z" />
+        </svg></button>
+      <button class="action-btn" id="btn-redo" onclick="redo()" disabled title="重做"><svg viewBox="0 0 24 24">
+          <path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-4.67 0-8.58 3.03-9.96 7.22l2.37.78c1.05-3.19 4.05-5.5 7.59-5.5 1.96 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" />
+        </svg></button>
+      <button class="action-btn danger" onclick="clearCanvas()" title="清空"><svg viewBox="0 0 24 24">
+          <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />
+        </svg></button>
+    </div>
+  </div>
+  <div class="mode-switch">
+    <button class="mode-btn active" onclick="switchMode('visual')">Visual</button>
+    <button class="mode-btn" onclick="switchMode('code')">Code</button>
+  </div>
+</header>
+
+<!-- ===== 主工作区 ===== -->
+<div id="workspace">
+  <!-- 可视化视图 -->
+  <div id="visual-view">
+    <svg id="canvas" viewBox="0 0 375 600">
+      <!-- 垂直参考线 -->
+      <line id="guide-canvas-v" class="ui-guide-line" x1="187.5" y1="0" x2="187.5" y2="600" />
+      <!-- 水平参考线 -->
+      <line id="guide-canvas-h" class="ui-guide-line" x1="0" y1="300" x2="375" y2="300" />
+      <!-- 内容图层 -->
+      <g id="content-layer">
+        <rect x="137" y="200" width="100" height="100" rx="12" ry="12" fill="#007aff" stroke="#000000" stroke-width="0" transform="rotate(0, 187, 250)" />
+      </g>
+      <!-- 编辑器UI图层 -->
+      <g id="editor-ui"></g>
+    </svg>
+  </div>
+
+  <!-- 代码视图 -->
+  <div id="code-view">
+    <div id="cm-container"></div>
+    <div id="code-toolbar">
+      <!-- 符号按钮由JS动态生成 -->
+    </div>
+  </div>
+
+  <!-- 属性面板 -->
+  <div id="prop-sheet">
+    <div class="sheet-header"><span class="sheet-title">属性调整</span><button class="close-btn" onclick="triggerBack()">收起</button></div>
+    <div class="sheet-content">
+      <!-- 文本内容控制组 -->
+      <div id="grp-text-content" class="control-group">
+        <div class="text-input-row"><span class="row-label">文本内容</span><input type="text" id="inp-text-val" oninput="updateAttr('text', this.value)"></div>
+      </div>
+      <!-- 颜色控制 -->
+      <div class="color-row">
+        <div class="color-group"><span class="color-label" id="lbl-fill">填充</span>
+          <div class="color-circle-wrap"><span id="dot-fill" class="color-dot"></span><input type="color" id="inp-fill" oninput="updateAttr('fill', this.value)"></div>
+        </div>
+        <div class="color-group"><span class="color-label" id="lbl-stroke">边框</span>
+          <div class="color-circle-wrap"><span id="dot-stroke" class="color-dot"></span><input type="color" id="inp-stroke" oninput="updateAttr('stroke', this.value)"></div>
+        </div>
+      </div>
+      <!-- 通用属性控制组 -->
+      <div id="grp-common" class="control-group active">
+        <div class="compact-row"><span class="row-label">边框宽</span><input type="range" id="inp-sw" min="0" max="20" step="0.5" oninput="updateAttr('stroke-width', this.value)"><span id="val-sw" class="row-val">0</span></div>
+        <div class="compact-row"><span class="row-label">透明度</span><input type="range" id="inp-op" min="0" max="1" step="0.1" oninput="updateAttr('opacity', this.value)"><span id="val-op" class="row-val">1</span></div>
+      </div>
+      <!-- 文本属性控制组 -->
+      <div id="grp-text-props" class="control-group">
+        <div class="compact-row"><span class="row-label">字号</span><input type="range" id="inp-fs" min="10" max="100" oninput="updateAttr('font-size', this.value)"><span id="val-fs" class="row-val"></span></div>
+      </div>
+      <!-- 矩形属性控制组 -->
+      <div id="grp-rect" class="control-group">
+        <div class="compact-row"><span class="row-label">宽度</span><input type="range" id="inp-width" min="10" max="300" oninput="updateAttr('width', this.value)"><span id="val-width" class="row-val"></span></div>
+        <div class="compact-row"><span class="row-label">高度</span><input type="range" id="inp-height" min="10" max="300" oninput="updateAttr('height', this.value)"><span id="val-height" class="row-val"></span></div>
+        <div class="compact-row"><span class="row-label">圆角</span><input type="range" id="inp-rx" min="0" max="50" oninput="updateAttr('rx', this.value)"><span id="val-rx" class="row-val"></span></div>
+      </div>
+      <!-- 圆形属性控制组 -->
+      <div id="grp-circle" class="control-group">
+        <div class="compact-row"><span class="row-label">半径</span><input type="range" id="inp-r" min="5" max="150" oninput="updateAttr('r', this.value)"><span id="val-r" class="row-val"></span></div>
+      </div>
+      <!-- 操作按钮 -->
+      <div class="action-row"><button class="full-btn btn-duplicate" onclick="duplicateElement()">复制</button><button class="full-btn btn-delete" onclick="deleteElement()">删除</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 底部工具栏 ===== -->
+<div id="toolbar">
+  <!-- 创建工具组 -->
+  <div id="tools-create" class="toolbar-container active">
+    <button class="tool-btn" onclick="addShape('rect')"><svg viewBox="0 0 24 24">
+        <path d="M4 6h16v12H4z" />
+      </svg>矩形</button>
+    <button class="tool-btn" onclick="addShape('circle')"><svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8" />
+      </svg>圆形</button>
+    <button class="tool-btn" onclick="addShape('ellipse')"><svg viewBox="0 0 24 24">
+        <ellipse cx="12" cy="12" rx="10" ry="6" />
+      </svg>椭圆</button>
+    <button class="tool-btn" onclick="addShape('triangle')"><svg viewBox="0 0 24 24">
+        <path d="M12 2L2 22h20L12 2z" />
+      </svg>三角</button>
+    <button class="tool-btn" onclick="addShape('star')"><svg viewBox="0 0 24 24">
+        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+      </svg>星形</button>
+    <button class="tool-btn" onclick="addShape('text')"><svg viewBox="0 0 24 24">
+        <path d="M5 4v3h5v13h4V7h5V4H5z" />
+      </svg>文字</button>
+  </div>
+  <!-- 编辑工具组 -->
+  <div id="tools-edit" class="toolbar-container">
+    <button class="tool-btn cancel-btn" onclick="triggerBack()"><svg viewBox="0 0 24 24">
+        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+      </svg>取消</button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn edit-btn" onclick="openSheet()"><svg viewBox="0 0 24 24">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+      </svg>属性</button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" onclick="moveLayer('top')"><svg viewBox="0 0 24 24">
+        <path d="M2 17h20v2H2v-2zm0-15h20v2H2V2zm0 7.5h20v2H2v-2z" transform="rotate(180 12 12)" />
+      </svg>置顶</button>
+    <button class="tool-btn" onclick="moveLayer('up')"><svg viewBox="0 0 24 24">
+        <path d="M8 11h3v10h2V11h3l-4-4-4 4zM4 3v2h16V3H4z" />
+      </svg>上移</button>
+    <button class="tool-btn" onclick="moveLayer('down')"><svg viewBox="0 0 24 24">
+        <path d="M16 13h-3V3h-2v10H8l4 4 4-4zM4 19v2h16v-2H4z" />
+      </svg>下移</button>
+    <button class="tool-btn" onclick="moveLayer('bottom')"><svg viewBox="0 0 24 24">
+        <path d="M22 7H2V5h20v2zm0 15H2v-2h20v2zm0-7.5H2v-2h20v2z" transform="rotate(180 12 12)" />
+      </svg>置底</button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" onclick="deleteElement()" style="color:var(--danger-color)"><svg viewBox="0 0 24 24">
+        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+      </svg>删除</button>
+  </div>
+</div>
+
+<!-- ===== CodeMirror 代码编辑器模块 ===== -->
+<script type="module">
+  import {
+    EditorView,
+    basicSetup
+  } from "https://esm.sh/codemirror@6.0.1"
+  import {
+    xml
+  } from "https://esm.sh/@codemirror/lang-xml@6.0.2"
+  import {
+    EditorState
+  } from "https://esm.sh/@codemirror/state@6.0.0"
+
+  // 初始化代码编辑器
+  const editor = new EditorView({
+    extensions: [
+      basicSetup,
+      xml(),
+      EditorView.theme({
+        "&": {
+          height: "100%",
+          fontSize: "14px"
+        },
+        ".cm-content": {
+          fontFamily: "Menlo, monospace"
+        },
+        ".cm-scroller": {
+          overflow: "auto"
+        }
+      })
+    ],
+    parent: document.getElementById("cm-container")
+  });
+
+  // 全局桥接，供非模块脚本使用
+  window.cmEditor = {
+    setValue: (val) => {
+      editor.dispatch({
+        changes: {
+          from: 0,
+          to: editor.state.doc.length,
+          insert: val
+        }
+      });
+    },
+    getValue: () => editor.state.doc.toString(),
+    insert: (text) => {
+      const range = editor.state.selection.main;
+      editor.dispatch({
+        changes: {
+          from: range.from,
+          to: range.to,
+          insert: text
+        },
+        selection: {
+          anchor: range.from + text.length
+        }
+      });
+      editor.focus();
+    }
+  };
+
+  // 初始化代码工具栏
+  const symbols = ['<', '>', '/', '=', '"', ':', ';', '-', 'fill', 'stroke', 'width', 'height', 'd', 'path', 'rect', 'circle', 'text', 'font-size'];
+  const tb = document.getElementById('code-toolbar');
+  symbols.forEach(s => {
+    const btn = document.createElement('div');
+    btn.className = 'code-key' + (s.length > 1 ? ' attr' : '');
+    btn.textContent = s;
+    btn.onclick = () => window.cmEditor.insert(s);
+    tb.appendChild(btn);
+  });
+</script>
+
+<!-- ===== 主逻辑代码 ===== -->
+<script>
+/**
+ * SVG图形编辑器核心脚本
+ * 
+ * 主要功能模块：
+ * - 图形元素的创建、选择、变换操作
+ * - 可视化编辑与代码模式切换
+ * - 历史记录管理（撤销/重做）
+ * - 属性面板同步控制
+ * - 交互式编辑UI渲染
+ * 
+ * @version 1.3 (Restricted Aspect Ratio Handle)
+ * @since 2024
+ * @file Script.js
+ */
+
+// ==================== 全局变量定义 ====================
+
+/**
+ * SVG画布和UI元素引用
+ */
+const svgCanvas = document.getElementById('canvas');
+const contentLayer = document.getElementById('content-layer');
+const editorUi = document.getElementById('editor-ui');
+const propSheet = document.getElementById('prop-sheet');
+const toolsCreate = document.getElementById('tools-create');
+const toolsEdit = document.getElementById('tools-edit');
+const guideCanvasV = document.getElementById('guide-canvas-v');
+const guideCanvasH = document.getElementById('guide-canvas-h');
+
+/**
+ * 编辑器状态变量
+ */
+let selectedEl = null;
+let interactionMode = 'idle';
+let dragDir = '';
+let startPos = { x: 0, y: 0 };
+let initialAttrs = {};
+let state = {
+  hasSelection: false,
+  isDrawerOpen: false
+};
+let historyStack = [];
+let historyStep = -1;
+const MAX_HISTORY = 30;
+
+// ==================== 历史记录管理模块 ====================
+
+function initHistory() {
+  saveHistory();
+}
+
+function saveHistory() {
+  if (historyStep < historyStack.length - 1) {
+    historyStack = historyStack.slice(0, historyStep + 1);
+  }
+  historyStack.push(contentLayer.innerHTML);
+  if (historyStack.length > MAX_HISTORY) {
+    historyStack.shift();
+  } else {
+    historyStep++;
+  }
+  updateHistoryBtns();
+}
+
+function undo() {
+  if (historyStep > 0) {
+    historyStep--;
+    restoreState(historyStack[historyStep]);
+  }
+}
+
+function redo() {
+  if (historyStep < historyStack.length - 1) {
+    historyStep++;
+    restoreState(historyStack[historyStep]);
+  }
+}
+
+function restoreState(html) {
+  forceResetUI();
+  contentLayer.innerHTML = html;
+  updateHistoryBtns();
+}
+
+function updateHistoryBtns() {
+  document.getElementById('btn-undo').disabled = (historyStep <= 0);
+  document.getElementById('btn-redo').disabled = (historyStep >= historyStack.length - 1);
+}
+
+function clearCanvas() {
+  if (confirm("确定清空画布吗？")) {
+    forceResetUI();
+    contentLayer.innerHTML = '';
+    saveHistory();
+  }
+}
+
+// ==================== 模式切换模块 ====================
+
+function switchMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const visual = document.getElementById('visual-view');
+  const code = document.getElementById('code-view');
+  const tb = document.getElementById('toolbar');
+
+  if (mode === 'code') {
+    if (state.hasSelection) triggerBack();
+    
+    // 使用 DOM 遍历序列化，解决乱码问题
+    const raw = serializeSVG(contentLayer); 
+    
+    if (window.cmEditor) window.cmEditor.setValue(raw);
+    visual.style.display = 'none';
+    code.style.display = 'flex';
+    tb.style.display = 'none';
+  } else {
+    try {
+      if (window.cmEditor) {
+        contentLayer.innerHTML = window.cmEditor.getValue();
+      }
+      saveHistory();
+    } catch (e) {
+      console.error('代码解析错误:', e);
+    }
+    visual.style.display = 'flex';
+    code.style.display = 'none';
+    tb.style.display = 'block';
+  }
+}
+
+// ==================== 交互状态管理模块 ====================
+
+window.history.replaceState({ lvl: 0, name: 'idle' }, '');
+
+window.addEventListener('popstate', (e) => {
+  if (!e.state || e.state.lvl === 0) {
+    forceResetUI();
+  } else if (e.state.lvl === 1 && state.isDrawerOpen) {
+    closeSheetUI();
+  }
+});
+
+function triggerBack() {
+  window.history.back();
+}
+
+function enterSelectionState(el) {
+  if (selectedEl === el) return;
+  selectedEl = el;
+  renderEditorUI(true);
+
+  toolsCreate.classList.remove('active');
+  toolsEdit.classList.add('active');
+
+  if (!state.hasSelection) {
+    state.hasSelection = true;
+    window.history.pushState({ lvl: 1, name: 'selected' }, '');
+  } else {
+    window.history.replaceState({ lvl: 1, name: 'selected' }, '');
+  }
+}
+
+function forceResetUI() {
+  propSheet.classList.remove('open');
+  state.isDrawerOpen = false;
+  selectedEl = null;
+  state.hasSelection = false;
+  editorUi.innerHTML = '';
+  toolsEdit.classList.remove('active');
+  toolsCreate.classList.add('active');
+}
+
+function openSheet() {
+  if (state.isDrawerOpen) return;
+  syncPanelValues();
+  propSheet.classList.add('open');
+  state.isDrawerOpen = true;
+  window.history.pushState({ lvl: 2, name: 'drawer' }, '');
+}
+
+function closeSheetUI() {
+  propSheet.classList.remove('open');
+  state.isDrawerOpen = false;
+}
+
+function moveLayer(type) {
+  if (!selectedEl) return;
+  const parent = selectedEl.parentNode;
+  let changed = false;
+
+  switch (type) {
+    case 'top':
+      parent.appendChild(selectedEl);
+      changed = true;
+      break;
+    case 'bottom':
+      parent.prepend(selectedEl);
+      changed = true;
+      break;
+    case 'up':
+      const next = selectedEl.nextElementSibling;
+      if (next) {
+        parent.insertBefore(selectedEl, next.nextSibling);
+        changed = true;
+      }
+      break;
+    case 'down':
+      const prev = selectedEl.previousElementSibling;
+      if (prev) {
+        parent.insertBefore(selectedEl, prev);
+        changed = true;
+      }
+      break;
+  }
+  if (changed) saveHistory();
+}
+
+// ==================== 几何计算模块 ====================
+
+function getBBox(el) {
+  let bbox = { x: 0, y: 0, w: 0, h: 0 };
+  const tag = el.tagName;
+
+  if (tag === 'rect') {
+    bbox.x = parseFloat(el.getAttribute('x'));
+    bbox.y = parseFloat(el.getAttribute('y'));
+    bbox.w = parseFloat(el.getAttribute('width'));
+    bbox.h = parseFloat(el.getAttribute('height'));
+  } else if (tag === 'circle' || tag === 'ellipse') {
+    let cx = parseFloat(el.getAttribute('cx'));
+    let cy = parseFloat(el.getAttribute('cy'));
+    let rx = parseFloat(el.getAttribute('rx') || el.getAttribute('r'));
+    let ry = parseFloat(el.getAttribute('ry') || el.getAttribute('r'));
+    bbox.x = cx - rx;
+    bbox.y = cy - ry;
+    bbox.w = rx * 2;
+    bbox.h = ry * 2;
+  } else if (tag === 'text') {
+    try {
+      let rect = el.getBBox();
+      bbox.x = rect.x - 4;
+      bbox.y = rect.y - 4;
+      bbox.w = rect.width + 8;
+      bbox.h = rect.height + 8;
+    } catch (e) {
+      console.warn('文本边界计算失败:', e);
+    }
+  } else if (tag === 'path') {
+    try {
+      let rect = el.getBBox();
+      bbox.x = rect.x;
+      bbox.y = rect.y;
+      bbox.w = rect.width;
+      bbox.h = rect.height;
+    } catch (e) {
+      console.warn('路径边界计算失败:', e);
+    }
+  }
+  return bbox;
+}
+
+function getRotation(el) {
+  const transform = el.getAttribute('transform') || '';
+  const match = transform.match(/rotate\(([^,]+)\)/);
+  return match ? parseFloat(match[1]) : 0;
+}
+
+// ==================== 编辑器UI渲染模块 ====================
+
+function renderEditorUI(forceRebuild = false) {
+  if (!selectedEl) {
+    editorUi.innerHTML = '';
+    return;
+  }
+
+  const bbox = getBBox(selectedEl);
+  const tag = selectedEl.tagName;
+  const rotation = getRotation(selectedEl);
+
+  if (forceRebuild || editorUi.children.length === 0) {
+    rebuildEditorUI(tag);
+  }
+  updateUIPosition(bbox, rotation, tag);
+}
+
+function rebuildEditorUI(tag) {
+  editorUi.innerHTML = '';
+  const wrapper = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  wrapper.setAttribute("id", "ui-wrapper");
+  editorUi.appendChild(wrapper);
+
+  // 创建选择框
+  const box = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  box.setAttribute("id", "ui-box");
+  box.setAttribute("class", "ui-selection-box");
+
+  if (tag === 'text') {
+    const dragArea = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    dragArea.setAttribute("id", "ui-drag-area");
+    dragArea.setAttribute("class", "ui-text-drag-area");
+    wrapper.appendChild(dragArea);
+  } else if (tag === 'circle' || tag === 'ellipse') {
+    box.setAttribute("rx", "50%");
+  }
+  wrapper.appendChild(box);
+
+  createGuideLines(wrapper);
+  createRotationHandle(wrapper);
+
+  if (tag === 'text') {
+    createHandle(wrapper, 'se', 'resize-text');
+  } else {
+    // 基础手柄：上下左右
+    const handleDirs = ['n', 's', 'w', 'e'];
+    
+    // 【修改处】仅为 矩形(rect) 和 路径(path/不规则形状) 添加右上角(ne)等比例手柄
+    // 圆形、椭圆、线条等不添加
+    if (tag === 'rect' || tag === 'path') {
+      handleDirs.push('ne');
+    }
+
+    handleDirs.forEach(dir => createHandle(wrapper, dir, dir));
+
+    if (tag === 'rect') {
+      createRadiusHandle(wrapper);
+    }
+  }
+}
+
+function createGuideLines(parent) {
+  const vGuide = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  vGuide.setAttribute("id", "guide-v");
+  vGuide.setAttribute("class", "ui-guide-line");
+  parent.appendChild(vGuide);
+
+  const hGuide = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  hGuide.setAttribute("id", "guide-h");
+  hGuide.setAttribute("class", "ui-guide-line");
+  parent.appendChild(hGuide);
+}
+
+function createRotationHandle(parent) {
+  const rotGrp = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  rotGrp.setAttribute("id", "ui-grp-rotate");
+
+  const rotLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  rotLine.setAttribute("class", "ui-rotate-connector");
+
+  const rotIcon = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  rotIcon.setAttribute("r", 6);
+  rotIcon.setAttribute("class", "ui-rotate-handle");
+
+  const rotHit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  rotHit.setAttribute("r", 15);
+  rotHit.setAttribute("class", "ui-hit");
+  rotHit.setAttribute("data-dir", "rotate");
+
+  rotGrp.appendChild(rotLine);
+  rotGrp.appendChild(rotIcon);
+  rotGrp.appendChild(rotHit);
+  parent.appendChild(rotGrp);
+}
+
+function createRadiusHandle(parent) {
+  const rGrp = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  rGrp.setAttribute("id", "ui-grp-radius");
+
+  const rDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  rDot.setAttribute("r", 5);
+  rDot.setAttribute("class", "ui-radius-handle");
+
+  const rHit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  rHit.setAttribute("r", 15);
+  rHit.setAttribute("class", "ui-hit");
+  rHit.setAttribute("data-dir", "radius");
+
+  rGrp.appendChild(rDot);
+  rGrp.appendChild(rHit);
+  parent.appendChild(rGrp);
+}
+
+function updateUIPosition(bbox, rotation, tag) {
+  const wrapper = document.getElementById('ui-wrapper');
+  const cx = bbox.x + bbox.w / 2;
+  const cy = bbox.y + bbox.h / 2;
+
+  wrapper.setAttribute("transform", `rotate(${rotation}, ${cx}, ${cy})`);
+
+  const box = document.getElementById('ui-box');
+  if (box) {
+    box.setAttribute("x", bbox.x);
+    box.setAttribute("y", bbox.y);
+    box.setAttribute("width", bbox.w);
+    box.setAttribute("height", bbox.h);
+  }
+
+  const dragArea = document.getElementById('ui-drag-area');
+  if (dragArea) {
+    dragArea.setAttribute("x", bbox.x);
+    dragArea.setAttribute("y", bbox.y);
+    dragArea.setAttribute("width", bbox.w);
+    dragArea.setAttribute("height", bbox.h);
+  }
+
+  updateGuideLines(cx, cy);
+  updateRotationHandle(bbox, cx, cy);
+
+  if (tag === 'rect') {
+    updateRadiusHandle(bbox);
+  }
+  updateResizeHandles(bbox, tag);
+}
+
+function updateGuideLines(cx, cy) {
+  const gV = document.getElementById('guide-v');
+  const gH = document.getElementById('guide-h');
+  if (gV) {
+    gV.setAttribute("x1", cx);
+    gV.setAttribute("y1", cy - 1000);
+    gV.setAttribute("x2", cx);
+    gV.setAttribute("y2", cy + 1000);
+  }
+  if (gH) {
+    gH.setAttribute("x1", cx - 1000);
+    gH.setAttribute("y1", cy);
+    gH.setAttribute("x2", cx + 1000);
+    gH.setAttribute("y2", cy);
+  }
+}
+
+function updateRotationHandle(bbox, cx, cy) {
+  const rotGrp = document.getElementById('ui-grp-rotate');
+  if (!rotGrp) return;
+
+  const rX = cx;
+  const rY = bbox.y - 25;
+  const rLine = rotGrp.firstChild;
+  const rIcon = rotGrp.childNodes[1];
+  const rHit = rotGrp.lastChild;
+
+  rLine.setAttribute("x1", cx);
+  rLine.setAttribute("y1", bbox.y);
+  rLine.setAttribute("x2", rX);
+  rLine.setAttribute("y2", rY);
+
+  rIcon.setAttribute("cx", rX);
+  rIcon.setAttribute("cy", rY);
+  rHit.setAttribute("cx", rX);
+  rHit.setAttribute("cy", rY);
+}
+
+function updateRadiusHandle(bbox) {
+  const rGrp = document.getElementById('ui-grp-radius');
+  if (!rGrp || !selectedEl) return;
+
+  const rx = parseFloat(selectedEl.getAttribute('rx')) || 0;
+  const maxR = Math.min(bbox.w, bbox.h) / 2;
+  const ratio = maxR > 0 ? Math.min(Math.max(0, rx), maxR) / maxR : 0;
+  const base = 0;
+  const moveX = (bbox.w / 2 - base) * ratio;
+  const moveY = (bbox.h / 2 - base) * ratio;
+
+  rGrp.setAttribute("transform", `translate(${bbox.x + base + moveX}, ${bbox.y + base + moveY})`);
+}
+
+function updateResizeHandles(bbox, tag) {
+  if (tag === 'text') {
+    updateHandlePos('se', bbox.x + bbox.w, bbox.y + bbox.h);
+  } else {
+    updateHandlePos('n', bbox.x + bbox.w / 2, bbox.y);
+    updateHandlePos('s', bbox.x + bbox.w / 2, bbox.y + bbox.h);
+    updateHandlePos('w', bbox.x, bbox.y + bbox.h / 2);
+    updateHandlePos('e', bbox.x + bbox.w, bbox.y + bbox.h / 2);
+    
+    // 如果存在ne手柄（即在rebuildEditorUI中被创建），则更新其位置
+    // updateHandlePos 内部有空值检查，调用它是安全的
+    updateHandlePos('ne', bbox.x + bbox.w, bbox.y);
+  }
+}
+
+function createHandle(parent, idSuffix, dir) {
+  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  group.setAttribute("id", "ui-grp-" + idSuffix);
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  line.setAttribute("class", "ui-handle");
+  line.setAttribute("rx", 2);
+
+  const hit = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  hit.setAttribute("class", "ui-hit");
+  hit.setAttribute("data-dir", dir);
+
+  group.appendChild(line);
+  group.appendChild(hit);
+  parent.appendChild(group);
+}
+
+function updateHandlePos(dir, x, y) {
+  const grp = document.getElementById("ui-grp-" + dir);
+  if (!grp) return;
+
+  const barLen = 20;
+  const barThick = 4;
+  const hitSize = 44;
+  const cornerSize = 10; 
+
+  const line = grp.firstChild;
+  const hit = grp.lastChild;
+
+  // NE(右上角) 或 SE(文本右下角) 视为方形角手柄
+  if (dir === 'se' || dir === 'ne') {
+    line.setAttribute("x", x - cornerSize / 2);
+    line.setAttribute("y", y - cornerSize / 2);
+    line.setAttribute("width", cornerSize);
+    line.setAttribute("height", cornerSize);
+  } else {
+    const isHorizontal = (dir === 'n' || dir === 's');
+    if (isHorizontal) {
+      line.setAttribute("x", x - barLen / 2);
+      line.setAttribute("y", y - barThick / 2);
+      line.setAttribute("width", barLen);
+      line.setAttribute("height", barThick);
+    } else {
+      line.setAttribute("x", x - barThick / 2);
+      line.setAttribute("y", y - barLen / 2);
+      line.setAttribute("width", barThick);
+      line.setAttribute("height", barLen);
+    }
+  }
+
+  hit.setAttribute("x", x - hitSize / 2);
+  hit.setAttribute("y", y - hitSize / 2);
+  hit.setAttribute("width", hitSize);
+  hit.setAttribute("height", hitSize);
+}
+
+// ==================== 手柄操作管理器 ====================
+
+const HandleManager = {
+  rotate: function(currX, currY, initialAttrs) {
+    const cx = initialAttrs.cx;
+    const cy = initialAttrs.cy;
+    const rad = Math.atan2(currY - cy, currX - cx);
+    let deg = rad * (180 / Math.PI) + 90;
+
+    let snap = false;
+    const angles = [0, 90, 180, 270, 360];
+    for (let a of angles) {
+      let currentAngle = deg % 360;
+      if (currentAngle < 0) currentAngle += 360;
+      if (Math.abs(currentAngle - a) < 5) {
+        deg = a;
+        snap = true;
+        if (navigator.vibrate) navigator.vibrate(10);
+        break;
+      }
+    }
+
+    const gV = document.getElementById('guide-v');
+    const gH = document.getElementById('guide-h');
+    if (snap) {
+      gV.classList.add('visible');
+      gH.classList.add('visible');
+    } else {
+      gV.classList.remove('visible');
+      gH.classList.remove('visible');
+    }
+
+    selectedEl.setAttribute('transform', `rotate(${deg}, ${cx}, ${cy})`);
+  },
+
+  move: function(currX, currY, initialAttrs) {
+    const dx = currX - startPos.x;
+    const dy = currY - startPos.y;
+    let newCx = initialAttrs.cx + dx;
+    let newCy = initialAttrs.cy + dy;
+
+    let snapX = false, snapY = false;
+    const centerX = 187.5, centerY = 300;
+    const snapThreshold = 5;
+
+    if (Math.abs(newCx - centerX) < snapThreshold) {
+      newCx = centerX;
+      snapX = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+    if (Math.abs(newCy - centerY) < snapThreshold) {
+      newCy = centerY;
+      snapY = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    guideCanvasV.classList.toggle('visible', snapX);
+    guideCanvasH.classList.toggle('visible', snapY);
+
+    const finalDx = newCx - initialAttrs.cx;
+    const finalDy = newCy - initialAttrs.cy;
+    const tag = selectedEl.tagName;
+
+    switch (tag) {
+      case 'rect':
+        selectedEl.setAttribute('x', initialAttrs.x + finalDx);
+        selectedEl.setAttribute('y', initialAttrs.y + finalDy);
+        break;
+      case 'circle':
+      case 'ellipse':
+        selectedEl.setAttribute('cx', initialAttrs.x + initialAttrs.w / 2 + finalDx);
+        selectedEl.setAttribute('cy', initialAttrs.y + initialAttrs.h / 2 + finalDy);
+        break;
+      case 'text':
+        selectedEl.setAttribute('x', initialAttrs.attrX + finalDx);
+        selectedEl.setAttribute('y', initialAttrs.attrY + finalDy);
+        break;
+      case 'path':
+        updatePathShape(selectedEl, initialAttrs.x + finalDx, initialAttrs.y + finalDy, initialAttrs.w, initialAttrs.h);
+        break;
+    }
+
+    selectedEl.setAttribute('transform', `rotate(${initialAttrs.rotation}, ${newCx}, ${newCy})`);
+  },
+
+  resize: function(dir, currX, currY, initialAttrs) {
+    const dx = currX - startPos.x;
+    const dy = currY - startPos.y;
+    const tag = selectedEl.tagName;
+
+    if (dir === 'resize-text') {
+      const scale = 1 + (dy / 100);
+      selectedEl.setAttribute('font-size', Math.max(10, initialAttrs.fs * scale));
+    } else if (dir === 'radius') {
+      let radius = Math.min(
+        Math.max(0, initialAttrs.rx + (dx + dy) / 2),
+        initialAttrs.w / 2,
+        initialAttrs.h / 2
+      );
+      selectedEl.setAttribute('rx', radius);
+      selectedEl.setAttribute('ry', radius);
+    } else {
+      let newX = initialAttrs.x,
+          newY = initialAttrs.y,
+          newWidth = initialAttrs.w,
+          newHeight = initialAttrs.h;
+
+      // NE (右上角) 等比例缩放逻辑
+      if (dir === 'ne') {
+        newWidth = Math.max(10, initialAttrs.w + dx);
+        const ratio = initialAttrs.w / initialAttrs.h;
+        newHeight = newWidth / ratio;
+        newY = initialAttrs.y + (initialAttrs.h - newHeight);
+      } else {
+        if (dir === 'e') newWidth = Math.max(10, initialAttrs.w + dx);
+        if (dir === 's') newHeight = Math.max(10, initialAttrs.h + dy);
+        if (dir === 'w') {
+          const delta = Math.min(dx, initialAttrs.w - 10);
+          newX += delta;
+          newWidth -= delta;
+        }
+        if (dir === 'n') {
+          const delta = Math.min(dy, initialAttrs.h - 10);
+          newY += delta;
+          newHeight -= delta;
+        }
+      }
+
+      switch (tag) {
+        case 'rect':
+          selectedEl.setAttribute('x', newX);
+          selectedEl.setAttribute('y', newY);
+          selectedEl.setAttribute('width', newWidth);
+          selectedEl.setAttribute('height', newHeight);
+          break;
+        case 'circle':
+          selectedEl.setAttribute('r', Math.max(newWidth, newHeight) / 2);
+          break;
+        case 'ellipse':
+          selectedEl.setAttribute('cx', newX + newWidth / 2);
+          selectedEl.setAttribute('cy', newY + newHeight / 2);
+          selectedEl.setAttribute('rx', newWidth / 2);
+          selectedEl.setAttribute('ry', newHeight / 2);
+          break;
+        case 'path':
+          updatePathShape(selectedEl, newX, newY, newWidth, newHeight);
+          break;
+      }
+
+      const newCx = newX + newWidth / 2;
+      const newCy = newY + newHeight / 2;
+      selectedEl.setAttribute('transform', `rotate(${initialAttrs.rotation}, ${newCx}, ${newCy})`);
+    }
+  }
+};
+
+// ==================== 事件处理模块 ====================
+
+svgCanvas.addEventListener('touchstart', handleStart, { passive: false });
+svgCanvas.addEventListener('touchmove', handleMove, { passive: false });
+svgCanvas.addEventListener('touchend', handleEnd);
+svgCanvas.addEventListener('mousedown', handleStart);
+svgCanvas.addEventListener('mousemove', handleMove);
+svgCanvas.addEventListener('mouseup', handleEnd);
+
+let lastTap = 0;
+
+function handleDoubleTap(e, el) {
+  const currentTime = new Date().getTime();
+  const timeDiff = currentTime - lastTap;
+
+  if (timeDiff < 300 && timeDiff > 0 && el.tagName === 'text') {
+    const newText = prompt("编辑文本内容:", el.textContent);
+    if (newText !== null) {
+      el.textContent = newText;
+      saveHistory();
+      renderEditorUI(false);
+    }
+    e.preventDefault();
+    return true;
+  }
+  lastTap = currentTime;
+  return false;
+}
+
+function handleStart(e) {
+  const target = e.target;
+  const isHit = target.classList.contains('ui-hit');
+  const isDragArea = target.classList.contains('ui-text-drag-area');
+  const isContent = target.parentElement.id === 'content-layer';
+
+  if (target.tagName === 'svg' && !isHit) {
+    if (state.hasSelection) triggerBack();
+    return;
+  }
+
+  e.preventDefault();
+
+  if (isContent && handleDoubleTap(e, target)) return;
+
+  startPos = getPoint(e);
+
+  if (isHit) {
+    dragDir = target.getAttribute('data-dir');
+    interactionMode = dragDir;
+    recordInitialAttrs();
+  } else if (isDragArea || isContent) {
+    let element = isDragArea ? selectedEl : target;
+    enterSelectionState(element);
+    interactionMode = 'move';
+    recordInitialAttrs();
+  }
+}
+
+function recordInitialAttrs() {
+  if (!selectedEl) return;
+  const bbox = getBBox(selectedEl);
+  initialAttrs = {
+    x: bbox.x,
+    y: bbox.y,
+    w: bbox.w,
+    h: bbox.h,
+    cx: bbox.x + bbox.w / 2,
+    cy: bbox.y + bbox.h / 2,
+    rotation: getRotation(selectedEl),
+    rx: parseFloat(selectedEl.getAttribute('rx')) || 0,
+    fs: parseFloat(selectedEl.getAttribute('font-size')) || 24,
+    attrX: parseFloat(selectedEl.getAttribute('x')) || 0,
+    attrY: parseFloat(selectedEl.getAttribute('y')) || 0
+  };
+}
+
+function handleMove(e) {
+  if (interactionMode === 'idle' || !selectedEl) return;
+
+  e.preventDefault();
+  const currentPos = getPoint(e);
+
+  switch (interactionMode) {
+    case 'rotate':
+      HandleManager.rotate(currentPos.x, currentPos.y, initialAttrs);
+      break;
+    case 'move':
+      HandleManager.move(currentPos.x, currentPos.y, initialAttrs);
+      break;
+    case 'n':
+    case 's':
+    case 'w':
+    case 'e':
+    case 'ne': // NE事件处理
+    case 'radius':
+    case 'resize-text':
+      HandleManager.resize(interactionMode, currentPos.x, currentPos.y, initialAttrs);
+      break;
+  }
+
+  renderEditorUI(false);
+  if (state.isDrawerOpen) syncPanelValues();
+}
+
+function updatePathShape(el, x, y, w, h) {
+  const type = el.getAttribute('data-type');
+  let pathData = "";
+
+  if (type === 'triangle') {
+    pathData = `M ${x + w / 2} ${y} L ${x + w} ${y + h} L ${x} ${y + h} Z`;
+  } else if (type === 'star') {
+    const cx = x + w / 2, cy = y + h / 2;
+    const rx = w / 2, ry = h / 2;
+    const innerRx = rx * 0.4, innerRy = ry * 0.4;
+    let points = [];
+    for (let i = 0; i < 10; i++) {
+      const isOuter = (i % 2 === 0);
+      const radiusX = isOuter ? rx : innerRx;
+      const radiusY = isOuter ? ry : innerRy;
+      const angle = (Math.PI / 5) * i - Math.PI / 2;
+      const pointX = (cx + Math.cos(angle) * radiusX).toFixed(1);
+      const pointY = (cy + Math.sin(angle) * radiusY).toFixed(1);
+      points.push(`${pointX} ${pointY}`);
+    }
+    pathData = "M " + points.join(" L ") + " Z";
+  }
+
+  if (pathData) el.setAttribute('d', pathData);
+}
+
+function handleEnd() {
+  if (interactionMode !== 'idle' && selectedEl) {
+    saveHistory();
+  }
+  interactionMode = 'idle';
+
+  const vGuide = document.getElementById('guide-v');
+  const hGuide = document.getElementById('guide-h');
+  if (vGuide) vGuide.classList.remove('visible');
+  if (hGuide) hGuide.classList.remove('visible');
+
+  guideCanvasV.classList.remove('visible');
+  guideCanvasH.classList.remove('visible');
+}
+
+function getPoint(e) {
+  const point = svgCanvas.createSVGPoint();
+  const client = e.touches ? e.touches[0] : e;
+  point.x = client.clientX;
+  point.y = client.clientY;
+  return point.matrixTransform(svgCanvas.getScreenCTM().inverse());
+}
+
+// ==================== 属性面板同步模块 ====================
+
+function syncPanelValues() {
+  if (!selectedEl) return;
+  const tag = selectedEl.tagName;
+  document.querySelectorAll('.control-group').forEach(g => g.classList.remove('active'));
+
+  if (tag === 'text') {
+    document.getElementById('grp-text-content').classList.add('active');
+    document.getElementById('grp-text-props').classList.add('active');
+    document.getElementById('inp-text-val').value = selectedEl.textContent;
+    document.getElementById('lbl-fill').innerText = "文字颜色";
+    document.getElementById('lbl-stroke').innerText = "文字描边";
+    setVal('inp-fs', 'val-fs', Math.round(selectedEl.getAttribute('font-size')));
+  } else {
+    document.getElementById('lbl-fill').innerText = "填充";
+    document.getElementById('lbl-stroke').innerText = "边框";
+    if (tag === 'rect') {
+      document.getElementById('grp-rect').classList.add('active');
+      setVal('inp-width', 'val-width', Math.round(selectedEl.getAttribute('width')));
+      setVal('inp-height', 'val-height', Math.round(selectedEl.getAttribute('height')));
+      setVal('inp-rx', 'val-rx', selectedEl.getAttribute('rx') || 0);
+    } else if (tag === 'circle' || tag === 'ellipse') {
+      document.getElementById('grp-circle').classList.add('active');
+      let radius = tag === 'circle' ? selectedEl.getAttribute('r') : selectedEl.getAttribute('rx');
+      setVal('inp-r', 'val-r', Math.round(radius));
+    }
+  }
+
+  document.getElementById('grp-common').classList.add('active');
+  const fill = selectedEl.getAttribute('fill') || '#000000';
+  const stroke = selectedEl.getAttribute('stroke') || 'none';
+
+  document.getElementById('inp-fill').value = rgbToHex(fill);
+  document.getElementById('dot-fill').style.backgroundColor = fill;
+  document.getElementById('inp-stroke').value = (stroke === 'none') ? '#ffffff' : rgbToHex(stroke);
+  document.getElementById('dot-stroke').style.backgroundColor = (stroke === 'none') ? 'transparent' : stroke;
+
+  setVal('inp-sw', 'val-sw', selectedEl.getAttribute('stroke-width') || 0);
+  setVal('inp-op', 'val-op', selectedEl.getAttribute('opacity') || 1);
+}
+
+function setVal(inputId, textId, value) {
+  const inputElem = document.getElementById(inputId);
+  if (inputElem) inputElem.value = value;
+  const textElem = document.getElementById(textId);
+  if (textElem) textElem.innerText = value;
+}
+
+function updateAttr(attr, value) {
+  if (!selectedEl) return;
+
+  if (attr === 'text') {
+    selectedEl.textContent = value;
+    renderEditorUI(false);
+    saveHistory();
+    return;
+  }
+
+  if (attr === 'rx') {
+    selectedEl.setAttribute('rx', value);
+    selectedEl.setAttribute('ry', value);
+    document.getElementById('val-rx').innerText = value;
+    renderEditorUI(false);
+    saveHistory();
+    return;
+  }
+
+  selectedEl.setAttribute(attr, value);
+  renderEditorUI(false);
+  saveHistory();
+}
+
+// ==================== 形状创建和管理模块 ====================
+
+function addShape(type) {
+  let element;
+  switch (type) {
+    case 'rect':
+      element = createSVG('rect', {
+        x: 130, y: 200, width: 100, height: 100,
+        fill: '#ff9500', rx: 10, ry: 10
+      });
+      break;
+    case 'circle':
+      element = createSVG('circle', {
+        cx: 180, cy: 250, r: 50,
+        fill: '#ff2d55'
+      });
+      break;
+    case 'ellipse':
+      element = createSVG('ellipse', {
+        cx: 180, cy: 250, rx: 60, ry: 40,
+        fill: '#5856d6'
+      });
+      break;
+    case 'triangle':
+      element = createSVG('path', {
+        d: '', fill: '#34c759', 'data-type': 'triangle'
+      });
+      updatePathShape(element, 130, 200, 100, 100);
+      break;
+    case 'star':
+      element = createSVG('path', {
+        d: '', fill: '#ffcc00', 'data-type': 'star'
+      });
+      updatePathShape(element, 130, 200, 100, 100);
+      break;
+    case 'text':
+      element = createSVG('text', {
+        x: 150, y: 250, fill: '#000', 'font-size': 32
+      });
+      element.textContent = "双击编辑";
+      break;
+  }
+
+  if (type !== 'text') {
+    element.setAttribute("stroke", "#000000");
+    element.setAttribute("stroke-width", "0");
+  }
+
+  contentLayer.appendChild(element);
+  enterSelectionState(element);
+  saveHistory();
+}
+
+function createSVG(tagName, attributes) {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+  for (let key in attributes) {
+    element.setAttribute(key, attributes[key]);
+  }
+  return element;
+}
+
+function deleteElement() {
+  if (selectedEl) {
+    selectedEl.remove();
+    const historyAdjust = state.isDrawerOpen ? -2 : -1;
+    window.history.go(historyAdjust);
+    saveHistory();
+  }
+}
+
+function duplicateElement() {
+  if (selectedEl) {
+    const clone = selectedEl.cloneNode(true);
+    contentLayer.appendChild(clone);
+    enterSelectionState(clone);
+    saveHistory();
+  }
+}
+
+// ==================== 工具函数模块 ====================
+
+function rgbToHex(color) {
+  if (!color || color === 'none') return "#000";
+  if (color.startsWith('#')) return color;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.fillStyle = color;
+  return context.fillStyle;
+}
+
+/**
+ * 序列化 SVG DOM 为格式化的字符串
+ * 使用 DOM 遍历而非字符串正则，修复嵌套错误 Bug
+ */
+function serializeSVG(container, indentLevel = 0) {
+  const tab = '  ';
+  let result = '';
+  const indent = tab.repeat(indentLevel);
+
+  Array.from(container.children).forEach(el => {
+    const tagName = el.tagName.toLowerCase();
+    let attrStr = '';
+    
+    Array.from(el.attributes).forEach(attr => {
+       attrStr += ` ${attr.name}="${attr.value}"`;
+    });
+
+    if (el.children.length === 0 && el.textContent.trim().length > 0) {
+       result += `${indent}<${tagName}${attrStr}>${el.textContent}</${tagName}>\r\n`;
+    } else if (el.children.length > 0) {
+       result += `${indent}<${tagName}${attrStr}>\r\n`;
+       result += serializeSVG(el, indentLevel + 1);
+       result += `${indent}</${tagName}>\r\n`;
+    } else {
+       result += `${indent}<${tagName}${attrStr} />\r\n`;
+    }
+  });
+  return result;
+}
+
+// ==================== 初始化 ====================
+
+initHistory();
+</script>
+</body>
+</html>
