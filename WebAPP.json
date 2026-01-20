@@ -1,0 +1,10 @@
+{
+  "versionName": "1.0.1",
+  "versionCode": "101",
+  "downloadUrl": "https://msdpy.lanzouv.com/iW7Hm3f9n9qb",
+  "updateLog": "优化了已知bug，增加交互体验！",
+  "notify": true,
+  "customNotification": "这是一条自定义通知内容\n略略略略\n略略略略略",
+  "showWebButton": false,
+  "webUrl": "https://qq.com",
+}
