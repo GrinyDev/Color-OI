@@ -4,7 +4,7 @@
   "notify": true,
   "customNotification": "发现新版本，请更新",
   "showWebButton": true,
-  "webUrl": "https://你的网站.com",
+  "webUrl": "https://grinydev.github.io/Color-OI-G/",
   "downloadUrl": "https://msdpy.lanzouv.com/iCpV73f2c10j",
   "updateLog": "1. 修复已知问题\n2. 优化使用体验"
 }
